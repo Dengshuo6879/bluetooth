@@ -1,0 +1,15 @@
+{
+	"description": "A WePY project",
+	"setting": {
+		"urlCheck": true,
+		"es6": false,
+		"postcss": false,
+		"minified": false,
+		"newFeature": true
+	},
+	"compileType": "miniprogram",
+	"appid": "wxd66d762d3b8132ff",
+	"projectname": "bluetooth",
+	"miniprogramRoot": "dist/",
+	"condition": {}
+}
