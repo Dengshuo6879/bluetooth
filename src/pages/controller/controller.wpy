@@ -1,0 +1,34 @@
+<style>
+.control-container {
+  margin-top: 50rpx;
+  padding: 10rpx 20rpx;
+  text-align: center;
+}
+.controll-box {
+  padding: 20rpx 30rpx;
+  /* border: 1px solid #ddd; */
+  border-radius: 4px;
+  margin: 30rpx;
+  background: #5BC8FE;
+  color: #fff;
+}
+</style>
+<template>
+  <view>
+    <view class='control-container'>
+      <text class='controll-box'>关机</text>
+    </view>
+    <view class='control-container'>
+      <text class='controll-box'>强度加</text>
+      <text class='controll-box'>强度减</text>
+    </view>
+    <view class='control-container'>
+      <text class='controll-box'>模式加</text>
+      <text class='controll-box'>模式减</text>
+    </view>
+  </view>
+</template>
+<script>
+import wepy from 'wepy';
+export default {};
+</script>
