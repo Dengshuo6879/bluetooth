@@ -29,6 +29,7 @@
   </view>
 </template>
 <script>
-import wepy from 'wepy';
-export default {};
+  import wepy from 'wepy'
+  export default class Controller extends wepy.page {
+  }
 </script>

@@ -20,6 +20,11 @@
    <view wx:if="{{!showBlueToothDetail}}">{{showTips}}</view>
    <view wx:else>连接的蓝牙：{{name!=''?name:deviceId}}</view>
   </view>
+  <view>
+    <view data-deviceId="{{item.deviceId}}" @tap="connectDevice" wx:for="{{devicesList}}">
+      {{item.name}}  {{item.deviceId}}
+    </view>
+  </view>
 </template>
 
 <script>
@@ -32,10 +37,12 @@
 
     data = {
       deviceId: '',
+      searchDeviceId: '',
       name: '',
       serviceId: '',
       showBlueToothDetail: false,
-      showTips: '猪宝宝蓝牙配置'
+      showTips: '猪宝宝蓝牙配置',
+      devicesList: []
     }
 
     computed = {
@@ -45,17 +52,24 @@
     }
 
     methods = {
-      connect2() {
-        console.log(123)
+      connectDevice(e) {
+        let curDeviceId = e.currentTarget.dataset.deviceid
+        console.log('e', e)
+        this.data.searchDeviceId = curDeviceId
+        this.$apply()
+        console.log('searchDeviceId', this.data.searchDeviceId)
+        this.search()
       }
     }
     connectBLEZDevice() {
       let that = this
       let devicesId = that.data.deviceId
+      console.log('enter connectDevice', devicesId)
       wx.createBLEConnection({
         deviceId: devicesId,
         success: (res) => {      // 连接蓝牙设备成功
           console.log('connection')
+          console.log('deviceId', devicesId)
           console.log(res)
           wx.showToast({
             'title': '连接蓝牙成功...',
@@ -97,19 +111,59 @@
       let devices = res.devices
       for (let i = 0; i < devices.length; i++) {
 //        let advertisData = devices[i].advertisData
-        console.log('find')
-        console.log('dataDetail', devices[i])
-        wx.stopBluetoothDevicesDiscovery({})
-        that.deviceId = devices[i].deviceId
-        that.name = devices[i].name
-        that.$apply()
-        console.log('this data', that.data)
-        wx.hideLoading()
-        that.connectBLEZDevice()
+        console.log('that.searchDeviceId', that.data.searchDeviceId)
+        console.log('that.data', that.data)
+        if (that.data.searchDeviceId != '') {
+          console.log('searchDeviceId', this.data.searchDeviceId)
+          console.log('conn11111222')
+          console.log('devices[i].deviceId', devices[i].deviceId)
+          that.data.deviceId = ''
+          that.$apply()
+          if (devices[i].deviceId == this.data.searchDeviceId) {
+            console.log('entererere')
+            wx.stopBluetoothDevicesDiscovery({})
+            that.data.deviceId = this.data.searchDeviceId
+            that.data.name = devices[i].name
+            that.$apply()
+            wx.hideLoading()
+            console.log('data,', that.data)
+            that.connectBLEZDevice()
+            break
+          }
+        }
+//        else {
+//          console.log('conn11111111')
+//          wx.stopBluetoothDevicesDiscovery({})
+//          that.deviceId = devices[i].deviceId
+//          that.name = devices[i].name
+//          that.$apply()
+//          console.log('this data', that.data)
+//          wx.hideLoading()
+//          that.connectBLEZDevice()
+//        }
       }
+    }
+    listBlueTooth() {
+      let that = this
+      let devicesArr = []
+      wx.getBluetoothDevices({
+        success(res) {
+          console.log('devicesList', res)
+          let deviceList = res.devices
+          deviceList.forEach((i, index) => {
+            devicesArr.push({
+              deviceId: i.deviceId,
+              name: i.name
+            })
+          })
+          that.devicesList = devicesArr
+          that.$apply()
+        }
+      })
     }
     search () {
       let that = this
+      console.log('search data', this.data)
       wx.startBluetoothDevicesDiscovery({
         services: [], // todo 填写uuid
         success(res) {
@@ -117,16 +171,19 @@
           wx.showLoading({
             title: '加载中'
           })
-          that.foundCallback = that.foundCallback.bind(that)
-          wx.onBluetoothDeviceFound(that.foundCallback)
-          setTimeout(function() {
-            if (!that.data.deviceId) {
-              wx.hideLoading()
-              wx.showToast({ type: 'exception', content: '搜索设备超时', duration: 3000 })
-              console.log('搜索设备超时')
-              wx.stopBluetoothDevicesDiscovery({})
-            }
-          }, 20000)
+          that.listBlueTooth()
+          if (that.data.searchDeviceId !='') {
+            that.foundCallback = that.foundCallback.bind(that)
+            wx.onBluetoothDeviceFound(that.foundCallback)
+            setTimeout(function() {
+              if (!that.data.deviceId) {
+                wx.hideLoading()
+                wx.showToast({ type: 'exception', content: '搜索设备超时', duration: 3000 })
+                console.log('搜索设备超时')
+                wx.stopBluetoothDevicesDiscovery({})
+              }
+            }, 20000)
+          }
         }
       })
     }
