@@ -16,20 +16,32 @@
 <template>
   <view>
     <view class='control-container'>
-      <text class='controll-box'>关机</text>
+      <text class='controll-box' @tap="writeVal" data-character-val="0x5A11A5">关机</text>
     </view>
     <view class='control-container'>
-      <text class='controll-box'>强度加</text>
-      <text class='controll-box'>强度减</text>
+      <text class='controll-box' @tap="writeVal" data-character-val="0x5A22A5">强度加</text>
+      <text class='controll-box' @tap="writeVal" data-character-val="0x5A33A5">强度减</text>
     </view>
     <view class='control-container'>
-      <text class='controll-box'>模式加</text>
-      <text class='controll-box'>模式减</text>
+      <text class='controll-box' @tap="writeVal" data-character-val="0x5A44A5">模式加</text>
+      <text class='controll-box' @tap="writeVal" data-character-val="0x5A55A5">模式减</text>
     </view>
   </view>
 </template>
 <script>
   import wepy from 'wepy'
   export default class Controller extends wepy.page {
+    data = {
+      sendCharacterVal: '',
+    }
+    methods= {
+      writeVal(e) {
+        let that = this
+        console.log(e.currentTarget.dataset.characterVal)
+        that.sendCharacterVal = e.currentTarget.dataset.characterVal
+        that.$apply()
+        console.log(that.data)
+      }
+    }
   }
 </script>

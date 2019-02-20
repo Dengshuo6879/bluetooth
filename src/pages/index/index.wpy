@@ -18,7 +18,8 @@
 <template>
   <view class="container">
    <view wx:if="{{!showBlueToothDetail}}">{{showTips}}</view>
-   <view wx:else>连接的蓝牙：{{name!=''?name:deviceId}}</view>
+   <view wx:else>连接的蓝牙：{{name}} {{deviceId}}</view>
+    <!--{{name!=''?name:deviceId}}-->
   </view>
   <view>
     <view data-device-id="{{item.deviceId}}" data-item-detail="{{item}}" @tap="connectDevice" wx:for="{{devicesList}}">
@@ -42,14 +43,9 @@
       serviceId: '',
       searchDetail: {},
       showBlueToothDetail: false,
-      showTips: '猪宝宝蓝牙配置',
-      devicesList: []
-    }
-
-    computed = {
-      now () {
-        return +new Date()
-      }
+      showTips: '暂时还未连接到蓝牙设备',
+      devicesList: [],
+      hadSearch: false
     }
 
     methods = {
@@ -61,6 +57,19 @@
         this.searchDetail = itemDetail
         this.$apply()
         this.search()
+      }
+    }
+    removeConnectedDevice() {
+      let that = this
+      let devicesList = that.devicesList
+      let t = devicesList.findIndex(function (item, index, arr) {
+        if (item['deviceId'] == that.deviceId) {
+          return index
+        }
+      })
+      if (t != -1) {
+        that.devicesList.splice(t, 1)
+        that.$apply()
       }
     }
     connectBLEZDevice() {
@@ -82,6 +91,7 @@
           that.deviceId = that.searchDetail.deviceId
           that.name = that.searchDetail.name
           that.$apply()
+          that.removeConnectedDevice()
           wx.getBLEDeviceServices({
             deviceId: devicesId,
             success(res) {    // 获取服务id成功
@@ -114,8 +124,6 @@
       let devices = res.devices
       for (let i = 0; i < devices.length; i++) {
 //        let advertisData = devices[i].advertisData
-        console.log('that.searchDeviceId', that.data.searchDeviceId)
-        console.log('that.data', that.data)
         if (that.data.searchDeviceId != '') {
 //          console.log('searchDeviceId', this.data.searchDeviceId)
 //          console.log('conn11111222')
@@ -133,13 +141,20 @@
 //          }
         } else {
           console.log('conn11111111')
-          that.data.devicesList.push({
-            deviceId: devices[i].deviceId,
-            name: devices[i].name
+          let devicesList = that.devicesList
+          let t = devicesList.findIndex(function (item, index, arr) {
+            if (item['deviceId'] == devices[i].deviceId) {
+              return index
+            }
           })
-          that.$apply()
+          if (t == -1) {
+            that.devicesList.push({
+              deviceId: devices[i].deviceId,
+              name: devices[i].name
+            })
+            that.$apply()
+          }
         }
-        console.log('devicesList', that.data.devicesList)
       }
     }
     listBlueTooth() {
@@ -162,6 +177,8 @@
     }
     search () {
       let that = this
+      that.hadSearch = true
+      that.$apply()
       console.log('search data', this.data)
       wx.startBluetoothDevicesDiscovery({
         services: [], // todo 填写uuid
@@ -173,10 +190,9 @@
           if (that.data.searchDeviceId != '') {
             console.log('enterxxx', that.data.searchDeviceId)
             that.connectBLEZDevice()
-          } else {
-            that.foundCallback = that.foundCallback.bind(that)
-            wx.onBluetoothDeviceFound(that.foundCallback)
           }
+          that.foundCallback = that.foundCallback.bind(that)
+          wx.onBluetoothDeviceFound(that.foundCallback)
           setTimeout(function() {
             wx.hideLoading()
             console.log('搜索设备结束')
@@ -209,10 +225,16 @@
         },
         fail() {
           console.log('failed')
-          wx.showToast({
-            'title': '请开启手机蓝牙后再试!',
-            'duration': 2000,
-            'icon': 'none'
+          wx.showModal({
+            'content': '请开启手机蓝牙后再试!',
+            'showCancel': false,
+            'confirmText': '我知道了'
+          })
+          wx.onBluetoothAdapterStateChange(function (res) {
+            console.log('adapterState changed, now is', res)
+            if (res.available && that.hadSearch == false) {
+              that.search()
+            }
           })
         }
       })
