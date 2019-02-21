@@ -18,7 +18,7 @@
 <template>
   <view class="container">
    <view wx:if="{{!showBlueToothDetail}}">{{showTips}}</view>
-   <view wx:else>连接的蓝牙：{{name}} {{deviceId}}</view>
+   <view wx:else @tap="toController">连接的蓝牙：{{name}} {{deviceId}}</view>
     <!--{{name!=''?name:deviceId}}-->
   </view>
   <view>
@@ -33,7 +33,7 @@
 
   export default class Index extends wepy.page {
     config = {
-      navigationBarTitleText: 'test'
+      navigationBarTitleText: '首页'
     }
 
     data = {
@@ -41,6 +41,7 @@
       searchDeviceId: '',
       name: '',
       serviceId: '',
+      characteristicId: '',
       searchDetail: {},
       showBlueToothDetail: false,
       showTips: '暂时还未连接到蓝牙设备',
@@ -57,6 +58,12 @@
         this.searchDetail = itemDetail
         this.$apply()
         this.search()
+      },
+      toController() {
+        console.log('todata', this.data)
+        wx.navigateTo({
+          url: '/pages/controller/controller?deviceId=' + this.deviceId + '&serviceId=' + this.serviceId + '&characteristicId=' + this.characteristicId
+        })
       }
     }
     removeConnectedDevice() {
@@ -103,6 +110,8 @@
                 serviceId: serviceId,
                 success(res) {
                   console.log('device getBLEDeviceCharacteristics:', res.characteristics)
+                  let characteristics = res.characteristics
+                  that.characteristicId = characteristics[0]['uuid']
                 }
               })
             }
@@ -185,7 +194,7 @@
         success(res) {
           console.log('discovery', res)
           wx.showLoading({
-            title: '加载中'
+            title: '蓝牙设备搜索中...'
           })
           if (that.data.searchDeviceId != '') {
             console.log('enterxxx', that.data.searchDeviceId)
@@ -233,6 +242,7 @@
           wx.onBluetoothAdapterStateChange(function (res) {
             console.log('adapterState changed, now is', res)
             if (res.available && that.hadSearch == false) {
+              console.log('zade')
               that.search()
             }
           })
