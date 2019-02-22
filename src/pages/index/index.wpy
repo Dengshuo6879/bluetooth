@@ -61,18 +61,25 @@
 }
 </style>
 <template>
-  <view class="container">
-    <view wx:if="{{!showBlueToothDetail}}">{{showTips}}</view>
-    <view wx:else @tap="toController">连接的蓝牙：{{name}} {{deviceId}}</view>
+  <!-- <view class="container"> -->
+    <!-- <view wx:if="{{!showBlueToothDetail}}">{{showTips}}</view> -->
+    <!-- <view wx:else @tap="toController">连接的蓝牙：{{name}} {{deviceId}}</view> -->
     <!--{{name!=''?name:deviceId}}-->
-  </view>
+  <!-- </view> -->
   <view class='listContainer'>
-    <view class='listText'>
-      <span class='divider'></span>已连接的蓝牙设备
-    </view>
-    <view class='linkedItem'>
-      Mackbook Pro
-      <span class='rightTriangle'></span>
+    <block wx:if="{{!showBlueToothDetail}}">
+      <view class='listText'>
+        <span class='divider'></span>{{showTips}}
+      </view>
+    </block>
+    <view wx:else @tap="toController">
+      <view class='listText'>
+        <span class='divider'></span>已连接的蓝牙设备
+      </view>
+      <view class='linkedItem'>
+        {{name!=''?name:deviceId}}
+        <span class='rightTriangle'></span>
+      </view>
     </view>
     <!-- <view data-device-id="{{item.deviceId}}" data-item-detail="{{item}}" @tap="connectDevice" wx:for="{{devicesList}}">
       {{item.name}}  {{item.deviceId}}
@@ -83,11 +90,13 @@
     <view class='listText'>
       <span class='divider'></span>搜索到的蓝牙设备
     </view>
-    <view class='listItem'>
-      Mackbook Pro
-    </view>
-    <view class='listItem'>
-      Mackbook Pro
+    <block wx:if="{{devicesList.length>0}}">
+      <view class='listItem' data-device-id="{{item.deviceId}}" data-item-detail="{{item}}" @tap="connectDevice" wx:for="{{devicesList}}">
+        {{item.name}}  {{item.deviceId}}
+      </view>
+    </block>
+    <view class='listItem' wx:else>
+      暂无搜索到的蓝牙设备
     </view>
     <!-- <view data-device-id="{{item.deviceId}}" data-item-detail="{{item}}" @tap="connectDevice" wx:for="{{devicesList}}">
       {{item.name}}  {{item.deviceId}}
@@ -328,7 +337,7 @@ export default class Index extends wepy.page {
     });
   }
   onLoad() {
-    // this.connect()
+    this.connect()
   }
 }
 </script>
