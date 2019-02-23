@@ -19,93 +19,144 @@
 <template>
   <view class='control'>
     <view class='control-container'>
-      <text class='controll-box' @tap="writeVal" data-name="关机" data-character-val="0x5A11A5">关机</text>
+      <text class='controll-box' @tap="writeVal" data-name="关机" data-character-val="5A11A5">关机</text>
     </view>
     <view class='control-container'>
-      <text class='controll-box' @tap="writeVal" data-name="强度加" data-character-val="0x5A22A5">强度加</text>
-      <text class='controll-box' @tap="writeVal" data-name="强度减" data-character-val="0x5A33A5">强度减</text>
+      <text class='controll-box' @tap="writeVal" data-name="强度加" data-character-val="5A22A5">强度加</text>
+      <text class='controll-box' @tap="writeVal" data-name="强度减" data-character-val="5A33A5">强度减</text>
     </view>
     <view class='control-container'>
-      <text class='controll-box' @tap="writeVal" data-name="模式加" data-character-val="0x5A44A5">模式加</text>
-      <text class='controll-box' @tap="writeVal" data-name="模式减" data-character-val="0x5A55A5">模式减</text>
+      <text class='controll-box' @tap="writeVal" data-name="模式加" data-character-val="5A44A5">模式加</text>
+      <text class='controll-box' @tap="writeVal" data-name="模式减" data-character-val="5A55A5">模式减</text>
     </view>
   </view>
 </template>
 <script>
-import wepy from 'wepy';
+import wepy from 'wepy'
 export default class Controller extends wepy.page {
   data = {
     sendCharacterVal: '',
     deviceId: '',
     serviceId: '',
     characteristicId: '',
-    operatorName: ''
+    operatorName: '',
+    allowReConnCount: 3,
+    reConnCount: 0
   };
   methods = {
     writeVal(e) {
-      let that = this;
-      console.log(e.currentTarget.dataset.characterVal);
-      that.sendCharacterVal = e.currentTarget.dataset.characterVal;
-      that.operatorName = e.currentTarget.dataset.name;
-      that.$apply();
-      console.log(that.data);
-      that.sendValToBlueTooth();
+      let that = this
+      console.log(e.currentTarget.dataset.characterVal)
+      that.sendCharacterVal = e.currentTarget.dataset.characterVal
+      that.operatorName = e.currentTarget.dataset.name
+      that.$apply()
+      console.log(that.data)
+      that.sendValToBlueTooth()
     }
-  };
+  }
+  hexStringToArrayBuffer (str) {
+    if (!str) {
+      return new ArrayBuffer(0)
+    }
+    var bufferLen = parseInt(str.length / 2)
+    var buffer = new ArrayBuffer(bufferLen)
+    let dataView = new DataView(buffer)
+    let ind = 0
+    for (var i = 0, len = str.length; i < len; i += 2) {
+      let code = '0x' + str.substr(i, 2)
+      dataView.setUint8(ind, code)
+      if (ind > bufferLen) {
+        break
+      }
+      ind++
+    }
+    return buffer
+  }
+  connectDeviceStateChange() {
+    let that = this
+    wx.onBLEConnectionStateChange(function (res) {
+      // 该方法回调中可以用于处理连接意外断开等异常情况
+      console.log(`device ${res.deviceId} state has changed, connected: ${res.connected}`)
+      if (!res.connected) {
+        wx.createBLEConnection({
+          deviceId: that.deviceId,
+          successI(res) {
+          },
+          fail() {
+            console.log('reconnect failed')
+            wx.showModal({
+              content: '连接的蓝牙已中断，请回到首页重新连接',
+              showCancel: false,
+              confirmText: '重新连接蓝牙',
+              complete(res) {
+                wx.setStorageSync('noreload', 1)
+                wx.redirectTo({
+                  url: '/pages/index/index?noSearch=1'
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+  }
   sendValToBlueTooth() {
-    var that = this;
-    let buffer = new ArrayBuffer(1);
-    let dataView = new DataView(buffer);
-    dataView.setUint8(0, that.sendCharacterVal);
-    console.log('发送数据');
-    console.log('sendCharacterVal', that.sendCharacterVal);
+    var that = this
+//    let buffer = new ArrayBuffer(1)
+//    let dataView = new DataView(buffer)
+//    dataView.setUint8(0, that.sendCharacterVal)
+    console.log('发送数据')
+    console.log('sendCharacterVal', that.sendCharacterVal)
     wx.showLoading({
       title: '执行操作中...'
-    });
+    })
+    let buffer = that.hexStringToArrayBuffer(that.sendCharacterVal)
+    console.log('buffer', buffer)
     wx.writeBLECharacteristicValue({
       deviceId: that.deviceId,
       serviceId: that.serviceId,
       characteristicId: that.characteristicId,
       value: buffer,
       success: function(res) {
-        wx.hideLoading();
-        console.log('success  指令发送成功');
+        wx.hideLoading()
+        console.log('success  指令发送成功')
         wx.showToast({
           title: that.operatorName + '指令发送成功',
           duration: 2000,
           icon: 'none'
-        });
+        })
       },
       fail: function(res) {
         // fail
-        wx.hideLoading();
-        console.log(res);
-        let msg = '';
+        wx.hideLoading()
+        console.log(res)
+        let msg = ''
         if (res.errCode == 10007) {
-          msg = '当前特征值不支持此操作';
+          msg = '当前特征值不支持此操作'
         } else if (res.errCode == 10003) {
-          msg = '连接失败';
+          msg = '连接失败'
         } else if (res.errCode == 10006) {
-          msg = '当前连接已断开'; // todo 是否重新连接
+          msg = '当前连接已断开' // todo 是否重新连接
         } else {
-          msg = '系统繁忙，请稍后再试';
+          msg = '系统繁忙，请稍后再试'
         }
         wx.showToast({
           title: msg,
           duration: 2000,
           icon: 'none'
-        });
+        })
       }
-    });
+    })
   }
   onLoad(options) {
-    let deviceId = options.deviceId;
-    let serviceId = options.serviceId;
-    let characteristicId = options.characteristicId;
-    this.deviceId = deviceId;
-    this.serviceId = serviceId;
-    this.characteristicId = characteristicId;
-    this.$apply();
+    let deviceId = options.deviceId
+    let serviceId = options.serviceId
+    let characteristicId = options.characteristicId
+    this.deviceId = deviceId
+    this.serviceId = serviceId
+    this.characteristicId = characteristicId
+    this.$apply()
+    this.connectDeviceStateChange()
   }
 }
 </script>

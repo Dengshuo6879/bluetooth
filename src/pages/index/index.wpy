@@ -92,7 +92,9 @@
     </view>
     <block wx:if="{{devicesList.length>0}}">
       <view class='listItem' data-device-id="{{item.deviceId}}" data-item-detail="{{item}}" @tap="connectDevice" wx:for="{{devicesList}}">
-        {{item.name}}  {{item.deviceId}}
+        <text wx:if="{{item.name !=''}}">{{item.name}}</text>
+        <text wx:else>{{item.deviceId}}</text>
+        <!--{{item.deviceId}}-->
       </view>
     </block>
     <view class='listItem' wx:else>
@@ -105,11 +107,13 @@
 </template>
 
 <script>
-import wepy from 'wepy';
+import wepy from 'wepy'
 
 export default class Index extends wepy.page {
   config = {
-    navigationBarTitleText: '首页'
+    navigationBarTitleText: '首页',
+    enablePullDownRefresh: true,
+    backgroundTextStyle: 'dark'
   };
 
   data = {
@@ -122,21 +126,23 @@ export default class Index extends wepy.page {
     showBlueToothDetail: false,
     showTips: '暂时还未连接到蓝牙设备',
     devicesList: [],
-    hadSearch: false
+    hadSearch: false,
+    hideLoading: false
   };
 
   methods = {
     connectDevice(e) {
-      console.log(e.currentTarget.dataset);
-      let curDeviceId = e.currentTarget.dataset.deviceId;
-      let itemDetail = e.currentTarget.dataset.itemDetail;
-      this.searchDeviceId = curDeviceId;
-      this.searchDetail = itemDetail;
-      this.$apply();
-      this.search();
+      console.log(e.currentTarget.dataset)
+      let curDeviceId = e.currentTarget.dataset.deviceId
+      let itemDetail = e.currentTarget.dataset.itemDetail
+      this.searchDeviceId = curDeviceId
+      this.searchDetail = itemDetail
+      this.hideLoading = true
+      this.$apply()
+      this.search(true)
     },
     toController() {
-      console.log('todata', this.data);
+      console.log('todata', this.data)
       wx.navigateTo({
         url:
           '/pages/controller/controller?deviceId=' +
@@ -145,50 +151,132 @@ export default class Index extends wepy.page {
           this.serviceId +
           '&characteristicId=' +
           this.characteristicId
-      });
+      })
     }
   };
-  removeConnectedDevice() {
-    let that = this;
-    let devicesList = that.devicesList;
-    let t = devicesList.findIndex(function(item, index, arr) {
-      if (item['deviceId'] == that.deviceId) {
-        return index;
+  updateBlueToothDevices() {
+    let that = this
+    wx.getBluetoothDevices({
+      success(res) {
+        console.log('update', res)
+        let devicesArr = res.devices
+        let oldDeviceList = that.devicesList
+        for (let i = 0, len = devicesArr.length; i < len; i++) {
+          let t = oldDeviceList.findIndex(function(item, index, arr) {
+            if (item['deviceId'] == devicesArr[i]['deviceId']) {
+              return index + 1
+            }
+          })
+          if (t == -1) {
+            var name = ''
+            let curSearchDeviceId = devicesArr[i]['deviceId']
+            if (curSearchDeviceId != that.deviceId){
+              if (devicesArr[i]['name'] != ' ' && devicesArr[i]['name'] != '未知设备') {
+                name = devicesArr[i]['name']
+              } else if (devicesArr[i]['localName'] != ' ' && devicesArr[i]['name'] != '未知设备') {
+                name = devicesArr[i]['localName']
+              }
+              that.devicesList.push({
+                deviceId: devicesArr[i]['deviceId'],
+                name: devicesArr[i]['name']
+              })
+              that.$apply()
+            }
+          }
+        }
       }
-    });
+    })
+  }
+  initData() {
+    let that = this
+    that.deviceId = ''
+    that.searchDeviceId = ''
+    that.name = ''
+    that.serviceId = ''
+    that.characteristicId = ''
+    that.searchDetail = { }
+    that.showBlueToothDetail = false
+    that.$apply()
+  }
+  removeConnectedDevice() {
+    let that = this
+    let devicesList = that.devicesList
+    console.log('that.deviceId', that.deviceId)
+    let t = devicesList.findIndex(function(item, index, arr) {
+      console.log('item', item)
+      if (item['deviceId'] == that.deviceId) {
+        console.log('eee')
+        console.log('index', index)
+        return index + 1
+      }
+    })
+    console.log('t', t)
     if (t != -1) {
-      that.devicesList.splice(t, 1);
-      that.$apply();
+      console.log('that.devicesList', that.devicesList)
+      that.devicesList.splice(t, 1)
+      console.log('that.devicesList', that.devicesList)
+      that.$apply()
     }
   }
+  connectDeviceStateChange() {
+    let that = this
+    wx.onBLEConnectionStateChange(function (res) {
+      // 该方法回调中可以用于处理连接意外断开等异常情况
+      console.log(`device ${res.deviceId} state has changed, connected: ${res.connected}`)
+      if (!res.connected) {
+        wx.createBLEConnection({
+          deviceId: that.deviceId,
+          success(res) {
+            console.log('reconnect succ')
+          },
+          fail() {
+            console.log('reconnect failed')
+            that.initData()
+            wx.showModal({
+              content: '连接的蓝牙已中断，请检查连接的蓝牙是否正常',
+              showCancel: false,
+              confirmText: '我知道了'
+            })
+          }
+        })
+      }
+    })
+  }
   connectBLEZDevice() {
-    let that = this;
-    let devicesId = that.searchDeviceId;
-    console.log('enter connectDevice', devicesId);
+    let that = this
+    let devicesId = that.searchDeviceId
+    console.log('enter connectDevice', devicesId)
+    wx.showLoading({
+      title: '蓝牙连接中...'
+    })
     wx.createBLEConnection({
       deviceId: devicesId,
       success: res => {
         // 连接蓝牙设备成功
-        console.log('connection');
-        console.log('deviceId', devicesId);
-        console.log(res);
+        console.log('connection')
+        console.log('deviceId', devicesId)
+        console.log(res)
+        wx.hideLoading()
         wx.showToast({
           title: '连接蓝牙成功...',
           duration: 2000,
           icon: 'none'
-        });
-        that.showBlueToothDetail = true;
-        that.deviceId = that.searchDetail.deviceId;
-        that.name = that.searchDetail.name;
-        that.$apply();
-        that.removeConnectedDevice();
+        })
+        console.log(that.devicesList)
+        that.showBlueToothDetail = true
+        that.deviceId = that.searchDetail.deviceId
+        that.name = that.searchDetail.name
+        that.$apply()
+        that.removeConnectedDevice()
+        that.updateBlueToothDevices()
+        that.connectDeviceStateChange()
         wx.getBLEDeviceServices({
           deviceId: devicesId,
           success(res) {
             // 获取服务id成功
-            that.serviceId = res.services[1].uuid;
-            let serviceId = res.services[1].uuid;
-            that.$apply();
+            that.serviceId = res.services[1].uuid
+            let serviceId = res.services[1].uuid
+            that.$apply()
             wx.getBLEDeviceCharacteristics({
               deviceId: devicesId,
               serviceId: serviceId,
@@ -196,28 +284,31 @@ export default class Index extends wepy.page {
                 console.log(
                   'device getBLEDeviceCharacteristics:',
                   res.characteristics
-                );
-                let characteristics = res.characteristics;
-                that.characteristicId = characteristics[0]['uuid'];
+                )
+                let characteristics = res.characteristics
+                that.characteristicId = characteristics[0]['uuid']
               }
-            });
+            })
           }
-        });
+        })
       },
       fail: res => {
-        console.log('连接蓝牙设备失败', res);
-        wx.showToast({
-          title: '连接蓝牙失败,请稍后再试',
-          duration: 2000,
-          icon: 'none'
-        });
+        wx.hideLoading()
+        console.log('连接蓝牙设备失败', res)
+        if (res.errCode != -1) {
+          wx.showToast({
+            title: '连接蓝牙失败,请稍后再试',
+            duration: 2000,
+            icon: 'none'
+          })
+        }
       }
-    });
+    })
   }
   foundCallback(res) {
-    let that = this;
-    console.log('foundcallback', res);
-    let devices = res.devices;
+    let that = this
+    console.log('foundcallback', res)
+    let devices = res.devices
     for (let i = 0; i < devices.length; i++) {
       //        let advertisData = devices[i].advertisData
       if (that.data.searchDeviceId != '') {
@@ -236,108 +327,132 @@ export default class Index extends wepy.page {
         //            break
         //          }
       } else {
-        console.log('conn11111111');
-        let devicesList = that.devicesList;
+        console.log('conn11111111')
+        let devicesList = that.devicesList
         let t = devicesList.findIndex(function(item, index, arr) {
           if (item['deviceId'] == devices[i].deviceId) {
-            return index;
+            return index
           }
-        });
+        })
         if (t == -1) {
+          var name = ''
+          console.log('devices', devices[i])
+          if (devices[i].name != ' ') {
+            name = devices[i].name
+            console.log('name', name)
+          } else if (devices[i].localName != ' ') {
+            name = devices[i].localName
+            console.log('name2', name)
+          }
           that.devicesList.push({
             deviceId: devices[i].deviceId,
-            name: devices[i].name
-          });
-          that.$apply();
+            name: name
+          })
+          that.$apply()
         }
       }
     }
   }
   listBlueTooth() {
-    let that = this;
-    let devicesArr = [];
+    let that = this
+    let devicesArr = []
     wx.getBluetoothDevices({
       success(res) {
-        console.log('devicesList', res);
-        let deviceList = res.devices;
+        console.log('devicesList', res)
+        let deviceList = res.devices
         deviceList.forEach((i, index) => {
           devicesArr.push({
             deviceId: i.deviceId,
             name: i.name
-          });
-        });
-        that.devicesList = devicesArr;
-        that.$apply();
+          })
+        })
+        that.devicesList = devicesArr
+        that.$apply()
       }
-    });
+    })
   }
-  search() {
-    let that = this;
-    that.hadSearch = true;
-    that.$apply();
-    console.log('search data', this.data);
+  search(isConn = false) {
+    let that = this
+    that.hadSearch = true
+    that.$apply()
     wx.startBluetoothDevicesDiscovery({
-      services: [], // todo 填写uuid
+      services: ['FB00'], // todo 填写uuid
       success(res) {
-        console.log('discovery', res);
-        wx.showLoading({
-          title: '蓝牙设备搜索中...'
-        });
-        if (that.data.searchDeviceId != '') {
-          console.log('enterxxx', that.data.searchDeviceId);
-          that.connectBLEZDevice();
+        console.log('discovery', res)
+        if (!that.hideLoading) {
+          wx.showLoading({
+            title: '搜索中...'
+          })
         }
-        that.foundCallback = that.foundCallback.bind(that);
-        wx.onBluetoothDeviceFound(that.foundCallback);
+        that.hideLoading = false
+        that.$apply()
+        if (that.data.searchDeviceId != '' && isConn) {
+          console.log('enterxxx', that.data.searchDeviceId)
+          that.connectBLEZDevice()
+        }
+        that.foundCallback = that.foundCallback.bind(that)
+        wx.onBluetoothDeviceFound(that.foundCallback)
         setTimeout(function() {
-          wx.hideLoading();
-          console.log('搜索设备结束');
-          wx.stopBluetoothDevicesDiscovery({});
-        }, 20000);
+          wx.hideLoading()
+          console.log('搜索设备结束')
+          wx.stopBluetoothDevicesDiscovery({})
+          wx.stopPullDownRefresh()
+        }, 10000)
       }
-    });
+    })
   }
   connect() {
-    let that = this;
+    let that = this
     wx.openBluetoothAdapter({
       success(res) {
-        console.log('res', res);
+        console.log('res', res)
         wx.getBluetoothAdapterState({
           success: function(res) {
-            console.log('state', res);
+            console.log('state', res)
             if (!!res && res.available) {
               if (!res.discovering) {
-                that.search();
+                that.search()
               }
             } else if (!res.available) {
               wx.showToast({
                 title: '设备无法开启蓝牙连接!',
                 duration: 2000,
                 icon: 'none'
-              });
+              })
             }
           }
-        });
+        })
       },
       fail() {
-        console.log('failed');
+        console.log('failed')
         wx.showModal({
           content: '请开启手机蓝牙后再试!',
           showCancel: false,
           confirmText: '我知道了'
-        });
+        })
         wx.onBluetoothAdapterStateChange(function(res) {
-          console.log('adapterState changed, now is', res);
+          console.log('adapterState changed, now is', res)
           if (res.available && that.hadSearch == false) {
-            console.log('zade');
-            that.search();
+            that.search()
           }
-        });
+        })
       }
-    });
+    })
   }
-  onLoad() {
-    this.connect()
+  onPullDownRefresh() {
+    console.log('下拉刷新')
+    this.search()
   }
+  onShow() {
+    var value = wx.getStorageSync('noreload')
+    console.log('value', value)
+    if (value != 1) {
+      console.log('not from controller.page')
+      this.connect()
+    }
+  }
+//  onLoad() {
+//    this.connect()
+//  }
 }
 </script>
