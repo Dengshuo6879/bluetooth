@@ -20,6 +20,7 @@
   <view class='control'>
     <view class='control-container'>
       <text class='controll-box' @tap="writeVal" data-name="关机" data-character-val="5A11A5">关机</text>
+      <text class='controll-box' @tap="unconnect" data-name="断开蓝牙连接">断开蓝牙连接</text>
     </view>
     <view class='control-container'>
       <text class='controll-box' @tap="writeVal" data-name="强度加" data-character-val="5A22A5">强度加</text>
@@ -52,6 +53,31 @@ export default class Controller extends wepy.page {
       that.$apply()
       console.log(that.data)
       that.sendValToBlueTooth()
+    },
+    unconnect() {
+      let that = this
+      wx.closeBLEConnection({
+        deviceId: that.deviceId,
+        success(res) {
+          console.log(res)
+          wx.showModal({
+            content: '蓝牙已成功断开',
+            showCancel: false,
+            confirmText: '我知道了',
+            complete(res) {
+              wx.navigateBack({
+                delta: 1
+              })
+            }
+          })
+          that.$parent.globalData.initData = 1
+          that.$apply()
+          wx.setStorageSync('noreload', 1)
+//      wx.redirectTo({
+//        url: '/pages/index/index'
+//      })
+        }
+      })
     }
   }
   hexStringToArrayBuffer (str) {
@@ -76,25 +102,42 @@ export default class Controller extends wepy.page {
     let that = this
     wx.onBLEConnectionStateChange(function (res) {
       // 该方法回调中可以用于处理连接意外断开等异常情况
-      console.log(`device ${res.deviceId} state has changed, connected: ${res.connected}`)
-      if (!res.connected) {
+      console.log(`马蒂 是这个页面吗 device ${res.deviceId} state has changed, connected: ${res.connected}`)
+      wx.showLoading({
+        title: '重连蓝牙中...'
+      })
+      if (!res.connected && that.deviceId) {
+        console.log('begin connecnt')
         wx.createBLEConnection({
           deviceId: that.deviceId,
-          successI(res) {
+          success(res) {
+            wx.showToast({
+              title: '重连成功',
+              icon: 'none',
+              duration: 2000
+            })
           },
           fail() {
             console.log('reconnect failed')
             wx.showModal({
-              content: '连接的蓝牙已中断，请回到首页重新连接',
+              content: '连接的蓝牙已中断，返回首页重新连接',
               showCancel: false,
-              confirmText: '重新连接蓝牙',
+              confirmText: '我知道了',
               complete(res) {
                 wx.setStorageSync('noreload', 1)
-                wx.redirectTo({
-                  url: '/pages/index/index?noSearch=1'
+//                wx.redirectTo({
+//                  url: '/pages/index/index?noSearch=1'
+//                })
+                that.$parent.globalData.initData = 1
+                that.$apply()
+                wx.navigateBack({
+                  delta: 1
                 })
               }
             })
+          },
+          complete() {
+            wx.hideLoading()
           }
         })
       }

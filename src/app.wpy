@@ -30,7 +30,7 @@ export default class extends wepy.app {
   }
 
   globalData = {
-    userInfo: null
+    initData: 0
   }
 }
 </script>

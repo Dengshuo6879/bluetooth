@@ -132,6 +132,7 @@ export default class Index extends wepy.page {
 
   methods = {
     connectDevice(e) {
+      console.log('enter connectDevice....')
       console.log(e.currentTarget.dataset)
       let curDeviceId = e.currentTarget.dataset.deviceId
       let itemDetail = e.currentTarget.dataset.itemDetail
@@ -155,6 +156,7 @@ export default class Index extends wepy.page {
     }
   };
   updateBlueToothDevices() {
+    console.log('enter updateBlueToothDevices....')
     let that = this
     wx.getBluetoothDevices({
       success(res) {
@@ -188,6 +190,7 @@ export default class Index extends wepy.page {
     })
   }
   initData() {
+    console.log('enter initData')
     let that = this
     that.deviceId = ''
     that.searchDeviceId = ''
@@ -199,6 +202,7 @@ export default class Index extends wepy.page {
     that.$apply()
   }
   removeConnectedDevice() {
+    console.log('enter removeConnectedDevice....')
     let that = this
     let devicesList = that.devicesList
     console.log('that.deviceId', that.deviceId)
@@ -219,6 +223,7 @@ export default class Index extends wepy.page {
     }
   }
   connectDeviceStateChange() {
+    console.log('enter connectDeviceStateChange....')
     let that = this
     wx.onBLEConnectionStateChange(function (res) {
       // 该方法回调中可以用于处理连接意外断开等异常情况
@@ -243,6 +248,7 @@ export default class Index extends wepy.page {
     })
   }
   connectBLEZDevice() {
+    console.log('enter connectBLEZDevice....')
     let that = this
     let devicesId = that.searchDeviceId
     console.log('enter connectDevice', devicesId)
@@ -268,7 +274,8 @@ export default class Index extends wepy.page {
         that.name = that.searchDetail.name
         that.$apply()
         that.removeConnectedDevice()
-        that.updateBlueToothDevices()
+//      that.updateBlueToothDevices()
+        that.listBlueTooth()
         that.connectDeviceStateChange()
         wx.getBLEDeviceServices({
           deviceId: devicesId,
@@ -306,8 +313,8 @@ export default class Index extends wepy.page {
     })
   }
   foundCallback(res) {
+    console.log('enter foundCallback....')
     let that = this
-    console.log('foundcallback', res)
     let devices = res.devices
     for (let i = 0; i < devices.length; i++) {
       //        let advertisData = devices[i].advertisData
@@ -327,7 +334,6 @@ export default class Index extends wepy.page {
         //            break
         //          }
       } else {
-        console.log('conn11111111')
         let devicesList = that.devicesList
         let t = devicesList.findIndex(function(item, index, arr) {
           if (item['deviceId'] == devices[i].deviceId) {
@@ -337,12 +343,10 @@ export default class Index extends wepy.page {
         if (t == -1) {
           var name = ''
           console.log('devices', devices[i])
-          if (devices[i].name != ' ') {
+          if (devices[i].name != ' ' && devices[i].name != '未知设备') {
             name = devices[i].name
-            console.log('name', name)
-          } else if (devices[i].localName != ' ') {
+          } else if (devices[i].localName != ' ' && devices[i].localName != '未知设备') {
             name = devices[i].localName
-            console.log('name2', name)
           }
           that.devicesList.push({
             deviceId: devices[i].deviceId,
@@ -354,17 +358,27 @@ export default class Index extends wepy.page {
     }
   }
   listBlueTooth() {
+    console.log('enter listBlueTooth....')
     let that = this
     let devicesArr = []
     wx.getBluetoothDevices({
       success(res) {
-        console.log('devicesList', res)
         let deviceList = res.devices
         deviceList.forEach((i, index) => {
-          devicesArr.push({
-            deviceId: i.deviceId,
-            name: i.name
-          })
+          if (i.deviceId != that.deviceId) {
+            var name = ''
+            if (i.name != ' ' && i.name != '未知设备') {
+              name = i.name
+            }
+//            else if (i.localName != ' ' && i.localName != '未知设备') {
+//              name = i.localName
+//              console.log('2222', i.localName)
+//            }
+            devicesArr.push({
+              deviceId: i.deviceId,
+              name: name
+            })
+          }
         })
         that.devicesList = devicesArr
         that.$apply()
@@ -372,11 +386,12 @@ export default class Index extends wepy.page {
     })
   }
   search(isConn = false) {
+    console.log('enter search....')
     let that = this
     that.hadSearch = true
     that.$apply()
     wx.startBluetoothDevicesDiscovery({
-      services: ['FB00'], // todo 填写uuid
+      services: [], // todo 填写uuid 'FB00'
       success(res) {
         console.log('discovery', res)
         if (!that.hideLoading) {
@@ -402,6 +417,7 @@ export default class Index extends wepy.page {
     })
   }
   connect() {
+    console.log('enter connect....')
     let that = this
     wx.openBluetoothAdapter({
       success(res) {
@@ -445,11 +461,18 @@ export default class Index extends wepy.page {
   }
   onShow() {
     var value = wx.getStorageSync('noreload')
-    console.log('value', value)
+    var initdata = this.$parent.globalData.initData
+    if (initdata) {
+      this.initData()
+      this.listBlueTooth()
+      this.$parent.globalData.initData = 0
+      this.$apply()
+    }
     if (value != 1) {
       console.log('not from controller.page')
       this.connect()
     }
+    wx.setStorageSync('noreload', 0)
   }
 //  onLoad() {
 //    this.connect()
