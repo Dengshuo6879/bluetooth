@@ -121,7 +121,7 @@ export default class Index extends wepy.page {
     searchDeviceId: '',
     name: '',
     serviceId: '',
-    characteristicId: '',
+    characteristicId: [],
     searchDetail: {},
     showBlueToothDetail: false,
     showTips: '暂时还未连接到蓝牙设备',
@@ -151,7 +151,7 @@ export default class Index extends wepy.page {
           '&serviceId=' +
           this.serviceId +
           '&characteristicId=' +
-          this.characteristicId
+          JSON.stringify(this.characteristicId)
       })
     }
   };
@@ -196,7 +196,7 @@ export default class Index extends wepy.page {
     that.searchDeviceId = ''
     that.name = ''
     that.serviceId = ''
-    that.characteristicId = ''
+    that.characteristicId = []
     that.searchDetail = { }
     that.showBlueToothDetail = false
     that.$apply()
@@ -293,7 +293,13 @@ export default class Index extends wepy.page {
                   res.characteristics
                 )
                 let characteristics = res.characteristics
-                that.characteristicId = characteristics[0]['uuid']
+                  console.log('characteristics',characteristics);
+                  var i=0;
+                  while(characteristics[i]){
+                      that.characteristicId[i]=characteristics[i].uuid;
+                      i++;
+                  }
+                  console.log('that.characteristicId',that.characteristicId);
               }
             })
           }

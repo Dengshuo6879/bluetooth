@@ -23,50 +23,70 @@
 </style>
 <template>
   <view class='control'>
+    <view>当前电量:{{getFirstData}}</view>
     <view class='control-container'>
       <text class='controll-box' @tap="writeVal" data-name="强度加" data-character-val="5A22A5">强度加</text>
     </view>
     <view class='control-container'>
       <text class='controll-box' @tap="writeVal" data-name="模式加" data-character-val="5A44A5">模式加</text>
-      <text class='controll-box' @tap="writeVal" data-name="关机" data-character-val="5A11A5">关机</text>
+      <text class='controll-box' style="background: red" @tap="writeVal" data-name="关机" data-character-val="EE0AEF">关机</text>
       <text class='controll-box' @tap="writeVal" data-name="模式减" data-character-val="5A55A5">模式减</text>
     </view>
     <view class='control-container'>
       <text class='controll-box' @tap="writeVal" data-name="强度减" data-character-val="5A33A5">强度减</text>
     </view>
     <view class='disconnect'>
-      <text class='controll-box' @tap="unconnect" data-name="断开蓝牙连接">断开蓝牙连接</text>
+      <text class='controll-box' @tap="unconnect" data-name="断开连接">断开蓝牙连接</text>
     </view>
   </view>
 </template>
 <script>
 import wepy from 'wepy';
 export default class Controller extends wepy.page {
+  config = {
+    navigationBarTitleText: '蓝牙操作页',
+    enablePullDownRefresh: true,
+    backgroundTextStyle: 'dark'
+  };
   data = {
     sendCharacterVal: '',
     deviceId: '',
     serviceId: '',
-    characteristicId: '',
+    characteristicId: [],
     operatorName: '',
     allowReConnCount: 3,
-    reConnCount: 0
+    reConnCount: 0,
+    unit8List:[],
+  };
+  computed = {
+    getFirstData(){
+        console.log('getFirstData',this.unit8List[0]);
+        console.log('getFirstData',this.unit8List);
+        var firstData;
+        if(this.unit8List[0] == undefined) {
+            firstData = 0;
+        }else{
+            firstData = Number(this.unit8List[0])*10;
+        }
+        return firstData+'%';
+    }  
   };
   methods = {
     writeVal(e) {
       let that = this;
-      console.log(e.currentTarget.dataset.characterVal);
-      that.sendCharacterVal = e.currentTarget.dataset.characterVal;
-      that.operatorName = e.currentTarget.dataset.name;
-      that.$apply();
-      console.log(that.data);
-      that.sendValToBlueTooth();
+//      console.log(e.currentTarget.dataset.characterVal)
+      that.sendCharacterVal = e.currentTarget.dataset.characterVal
+      that.operatorName = e.currentTarget.dataset.name
+      that.$apply()
+//      console.log(that.data)
+      that.sendValToBlueTooth()
     },
     unconnect() {
-      let that = this;
+      let that = this
       wx.closeBLEConnection({
         deviceId: that.deviceId,
         success(res) {
-          console.log(res);
+          console.log(res)
           wx.showModal({
             content: '蓝牙已成功断开',
             showCancel: false,
@@ -74,51 +94,51 @@ export default class Controller extends wepy.page {
             complete(res) {
               wx.navigateBack({
                 delta: 1
-              });
+              })
             }
-          });
-          that.$parent.globalData.initData = 1;
-          that.$apply();
-          wx.setStorageSync('noreload', 1);
+          })
+          that.$parent.globalData.initData = 1
+          that.$apply()
+          wx.setStorageSync('noreload', 1)
           //      wx.redirectTo({
           //        url: '/pages/index/index'
           //      })
         }
-      });
+      })
     }
   };
   hexStringToArrayBuffer(str) {
     if (!str) {
-      return new ArrayBuffer(0);
+      return new ArrayBuffer(0)
     }
-    var bufferLen = parseInt(str.length / 2);
-    var buffer = new ArrayBuffer(bufferLen);
-    let dataView = new DataView(buffer);
-    let ind = 0;
+    var bufferLen = parseInt(str.length / 2)
+    var buffer = new ArrayBuffer(bufferLen)
+    let dataView = new DataView(buffer)
+    let ind = 0
     for (var i = 0, len = str.length; i < len; i += 2) {
-      let code = '0x' + str.substr(i, 2);
-      dataView.setUint8(ind, code);
+      let code = '0x' + str.substr(i, 2)
+      dataView.setUint8(ind, code)
       if (ind > bufferLen) {
-        break;
+        break
       }
-      ind++;
+      ind++
     }
-    return buffer;
+    return buffer
   }
   connectDeviceStateChange() {
-    let that = this;
+    let that = this
     wx.onBLEConnectionStateChange(function(res) {
       // 该方法回调中可以用于处理连接意外断开等异常情况
       console.log(
         `马蒂 是这个页面吗 device ${
           res.deviceId
         } state has changed, connected: ${res.connected}`
-      );
+      )
       wx.showLoading({
         title: '重连蓝牙中...'
-      });
+      })
       if (!res.connected && that.deviceId) {
-        console.log('begin connecnt');
+        console.log('begin connecnt')
         wx.createBLEConnection({
           deviceId: that.deviceId,
           success(res) {
@@ -126,54 +146,96 @@ export default class Controller extends wepy.page {
               title: '重连成功',
               icon: 'none',
               duration: 2000
-            });
+            })
           },
           fail() {
-            console.log('reconnect failed');
+            console.log('reconnect failed')
             wx.showModal({
               content: '连接的蓝牙已中断，返回首页重新连接',
               showCancel: false,
               confirmText: '我知道了',
               complete(res) {
-                wx.setStorageSync('noreload', 1);
+                wx.setStorageSync('noreload', 1)
                 //                wx.redirectTo({
                 //                  url: '/pages/index/index?noSearch=1'
                 //                })
-                that.$parent.globalData.initData = 1;
-                that.$apply();
+                that.$parent.globalData.initData = 1
+                that.$apply()
                 wx.navigateBack({
                   delta: 1
-                });
+                })
               }
-            });
+            })
           },
           complete() {
-            wx.hideLoading();
+            wx.hideLoading()
           }
-        });
+        })
       }
-    });
+    })
+  }
+  subscribeNotifyChange() {
+      var that = this
+      console.log('that.characteristicId[1]',that.characteristicId[1]);
+      wx.notifyBLECharacteristicValueChange({
+          state: true, // 启用 notify 功能
+          // 这里的 deviceId 需要已经通过 createBLEConnection 与对应设备建立链接
+          deviceId: that.deviceId,
+          // 这里的 serviceId 需要在 getBLEDeviceServices 接口中获取
+          serviceId: that.serviceId,
+          // 这里的 characteristicId 需要在 getBLEDeviceCharacteristics 接口中获取
+          characteristicId: that.characteristicId[1],
+          success(res) {
+//              console.log('deviceId',that.deviceId);
+//              console.log('serviceId',that.serviceId);
+//              console.log('characteristicId',that.characteristicId[1]);
+//              console.log('notifyBLECharacteristicValueChange success', res)
+          }
+      })
+      function ab2hex(buffer) {
+          console.log('buffer',buffer);
+          console.log('new Uint8Array(buffer):'+new Uint8Array(buffer));
+          const hexArr = Array.prototype.map.call(
+              new Uint8Array(buffer),
+              function (bit) {
+                  return ('00' + bit.toString(16)).slice(-2)
+              }
+          )
+          return hexArr.join('')
+      }
+      wx.onBLECharacteristicValueChange(function (res) {
+//          console.log(`characteristic ${res.characteristicId} has changed, now is ${res.value}`)
+          that.unit8List = new Uint8Array(res.value);
+          console.log('that.unit8List',that.unit8List);
+          that.$apply()
+          console.log(ab2hex(res.value))
+      })
+
+  }
+  getNotifyValueChange(){
+
   }
   sendValToBlueTooth() {
-    var that = this;
+    var that = this
     //    let buffer = new ArrayBuffer(1)
     //    let dataView = new DataView(buffer)
     //    dataView.setUint8(0, that.sendCharacterVal)
     console.log('发送数据');
-    console.log('sendCharacterVal', that.sendCharacterVal);
+    console.log('sendCharacterVal', that.sendCharacterVal)
     wx.showLoading({
       title: '执行操作中...'
-    });
-    let buffer = that.hexStringToArrayBuffer(that.sendCharacterVal);
-    console.log('buffer', buffer);
+    })
+    let buffer = that.hexStringToArrayBuffer(that.sendCharacterVal)
+    console.log('buffer', buffer)
     wx.writeBLECharacteristicValue({
       deviceId: that.deviceId,
       serviceId: that.serviceId,
-      characteristicId: that.characteristicId,
+      characteristicId: that.characteristicId[0],
       value: buffer,
       success: function(res) {
-        wx.hideLoading();
-        console.log('success  指令发送成功');
+          console.log('that.characteristicId[0]',that.characteristicId[0]);
+        wx.hideLoading()
+        console.log('success  指令发送成功')
         wx.showToast({
           title: that.operatorName + '指令发送成功',
           duration: 2000,
@@ -182,35 +244,38 @@ export default class Controller extends wepy.page {
       },
       fail: function(res) {
         // fail
-        wx.hideLoading();
-        console.log(res);
-        let msg = '';
+        wx.hideLoading()
+        console.log(res)
+        let msg = ''
         if (res.errCode == 10007) {
-          msg = '当前特征值不支持此操作';
+          msg = '当前特征值不支持此操作'
         } else if (res.errCode == 10003) {
-          msg = '连接失败';
+          msg = '连接失败'
         } else if (res.errCode == 10006) {
-          msg = '当前连接已断开'; // todo 是否重新连接
+          msg = '当前连接已断开' // todo 是否重新连接
         } else {
-          msg = '系统繁忙，请稍后再试';
+          msg = '系统繁忙，请稍后再试'
         }
         wx.showToast({
           title: msg,
           duration: 2000,
           icon: 'none'
-        });
+        })
       }
-    });
+    })
   }
   onLoad(options) {
-    let deviceId = options.deviceId;
-    let serviceId = options.serviceId;
-    let characteristicId = options.characteristicId;
-    this.deviceId = deviceId;
-    this.serviceId = serviceId;
-    this.characteristicId = characteristicId;
-    this.$apply();
-    this.connectDeviceStateChange();
+    let deviceId = options.deviceId
+    let serviceId = options.serviceId
+    let characteristicId = JSON.parse(options.characteristicId)
+      console.log('characteristicId',characteristicId);
+    this.deviceId = deviceId
+    this.serviceId = serviceId
+    this.characteristicId = characteristicId
+    this.$apply()
+    this.connectDeviceStateChange()
+    this.subscribeNotifyChange()
+//    this.getNotifyValueChange()
   }
 }
 </script>
