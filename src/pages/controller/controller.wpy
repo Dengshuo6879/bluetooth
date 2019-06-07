@@ -126,7 +126,7 @@
       </view>
       <view class='batteryText'>{{batteryValue}}%</view>
     </view>
-    <view class=controlContainer>
+    <view class='controlContainer'>
       <view class='time control-container'>
         <canvas canvas-id='bgCanvas' style="border:1px solid transparent;width:140px;height:140px"></canvas>
         <view class='stepText'>
@@ -134,15 +134,16 @@
         </view>
       </view>
       <view class='control-container'>
-        <text class='controll-box' data-name="开始" data-character-val="5A33A5">开始</text>
+        <text wx:if="{{workState<=0}}" @tap="writeVal" class='controll-box' data-name="开始" data-character-val="EE0AEF">开始</text>
+        <text wx:else="{{workState}}" @tap="writeVal" class='controll-box' data-name="暂停" data-character-val="EE0BEF">暂停</text>
       </view>
       <view class='control-container'>
-        <text class='controll-box' @tap="writeVal" data-name="模式加" data-character-val="5A44A5">模式加</text>
-        <text data-name="模式加" style="color: #999">模式1</text>
-        <text class='controll-box' @tap="writeVal" data-name="模式减" data-character-val="5A55A5">模式减</text>
+        <text class='controll-box' @tap="writeVal" data-name="模式加" data-character-val="EE0DEF">模式加</text>
+        <text wx:if="{{modelLevel>0}}" style="color: #999">模式{{modelLevel}}</text>
+        <text class='controll-box' @tap="writeVal" data-name="模式减" data-character-val="EE0CEF">模式减</text>
       </view>
       <view class='control-container'>
-        <text class='controll-box' @tap="writeVal" data-name="关机" data-character-val="5A11A5">关机</text>
+        <text class='controll-box' @tap="writeVal" data-name="关机" data-character-val="EE0EEF">关机</text>
         <!-- <text class='controll-box' @tap="writeVal" data-name="强度加" data-character-val="5A22A5">强度加</text> -->
       </view>
     </view>
@@ -164,13 +165,18 @@ export default class Controller extends wepy.page {
     sendCharacterVal: '',
     deviceId: '',
     serviceId: '',
-    characteristicId: '',
+    characteristicId: [],
     operatorName: '',
     allowReConnCount: 3,
     reConnCount: 0,
-
+    unit8List:[],
+    modelLevel:0,//模式级别
+    workState:0,//暂停
     stepText: 0, //设置倒计时初始值
-    batteryValue: 24 // 设置电池值
+    batteryValue: 0, // 设置电池值
+    hasDown:1,//是否脱落 1表示没有脱落 0表示脱落
+  };
+  computed = {
   };
   methods = {
     writeVal(e) {
@@ -179,7 +185,6 @@ export default class Controller extends wepy.page {
       that.sendCharacterVal = e.currentTarget.dataset.characterVal;
       that.operatorName = e.currentTarget.dataset.name;
       that.$apply();
-      console.log(that.data);
       that.sendValToBlueTooth();
     },
     unconnect() {
@@ -206,11 +211,21 @@ export default class Controller extends wepy.page {
           //      })
         }
       });
-    }
+    },
   };
   watch = {
-    stepText: function() {
-      this.drawTime();
+    stepText(newVal,oldVal) {
+      console.log('newVal--', newVal)
+      this.drawTime(newVal);
+    },
+    hasDown:function (newVal,oldVal) {
+      if (newVal == 0) {
+        wx.showModal({
+              content: '仪器已脱落',
+              showCancel: false,
+              confirmText: '我知道了',
+            });
+      }
     }
   };
   hexStringToArrayBuffer(str) {
@@ -280,11 +295,67 @@ export default class Controller extends wepy.page {
       }
     });
   }
+  formateNeedData(data){
+      var formatData = data.filter(function(item,index){
+        return index%2 == 0;
+      });
+      this.updateData(formatData);
+    }
+    updateData(formatData){
+      this.batteryValue = Number(formatData[0])*10;//电量 10 32 0 32 4
+      this.workState = formatData[1];//工作状态 1为正常 0为暂停
+      this.modelLevel = formatData[2];//模式级别
+      this.stepText = formatData[3];//使用时间
+      this.hasDown = formatData[4];//是否脱落
+      this.$apply();
+      console.log(this.data);
+    }
+  subscribeNotifyChange() {
+      var that = this;
+      if(that.characteristicId.length<1){
+        return;
+      }
+      console.log(that.characteristicId);
+      console.log('that.characteristicId[1]',that.characteristicId[1]);
+      wx.notifyBLECharacteristicValueChange({
+          state: true, // 启用 notify 功能
+          // 这里的 deviceId 需要已经通过 createBLEConnection 与对应设备建立链接
+          deviceId: that.deviceId,
+          // 这里的 serviceId 需要在 getBLEDeviceServices 接口中获取
+          serviceId: that.serviceId,
+          // 这里的 characteristicId 需要在 getBLEDeviceCharacteristics 接口中获取
+          characteristicId: that.characteristicId[1],
+          success(res) {
+//              console.log('deviceId',that.deviceId);
+//              console.log('serviceId',that.serviceId);
+//              console.log('characteristicId',that.characteristicId[1]);
+//              console.log('notifyBLECharacteristicValueChange success', res)
+          }
+      })
+      function ab2hex(buffer) {
+          console.log('buffer',buffer);
+          console.log('new Uint8Array(buffer):'+new Uint8Array(buffer));
+          const hexArr = Array.prototype.map.call(
+              new Uint8Array(buffer),
+              function (bit) {
+                  return ('00' + bit.toString(16)).slice(-2)
+              }
+          )
+          return hexArr.join('')
+      }
+      wx.onBLECharacteristicValueChange(function (res) {
+        //  console.log(`characteristic ${res.characteristicId} has changed, now is ${res.value}`)
+          var changeData = new Uint8Array(res.value);
+          // console.log('changeData',changeData);
+          if(changeData.length>0){
+            that.formateNeedData(changeData);  
+          }
+          // console.log(ab2hex(res.value))
+      })
+
+  }
   sendValToBlueTooth() {
     var that = this;
-    //    let buffer = new ArrayBuffer(1)
-    //    let dataView = new DataView(buffer)
-    //    dataView.setUint8(0, that.sendCharacterVal)
     console.log('发送数据');
     console.log('sendCharacterVal', that.sendCharacterVal);
     wx.showLoading({
@@ -295,7 +366,7 @@ export default class Controller extends wepy.page {
     wx.writeBLECharacteristicValue({
       deviceId: that.deviceId,
       serviceId: that.serviceId,
-      characteristicId: that.characteristicId,
+      characteristicId: that.characteristicId[0],
       value: buffer,
       success: function(res) {
         wx.hideLoading();
@@ -331,17 +402,24 @@ export default class Controller extends wepy.page {
   onLoad(options) {
     let deviceId = options.deviceId;
     let serviceId = options.serviceId;
-    let characteristicId = options.characteristicId;
+    let characteristicId = JSON.parse(options.characteristicId);
     this.deviceId = deviceId;
     this.serviceId = serviceId;
+    console.log('characteristicId',!characteristicId);
+    if(!characteristicId){
+      characteristicId = [];
+    }
     this.characteristicId = characteristicId;
     this.$apply();
+    console.log('this.characteristicId',this.characteristicId);
+    console.log('this.data',this.data);
     this.connectDeviceStateChange();
-
-    this.drawTime(this.stepText);
+    this.subscribeNotifyChange();
+    this.drawTime(0);
   }
 
   drawTime(val) {
+    console.log('drawTime val',val);
     const valPercent = val / 60 * 2 - 0.5;
     ctx.setLineWidth(10);
     ctx.arc(70, 70, 60, 0, 2 * Math.PI);
@@ -350,7 +428,7 @@ export default class Controller extends wepy.page {
 
     ctx.beginPath();
     ctx.setLineCap('round');
-    if(val == 0){
+    if(!val){
       ctx.setLineWidth(0.1);
     }else{
       ctx.setLineWidth(12);

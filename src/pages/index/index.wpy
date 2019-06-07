@@ -259,7 +259,6 @@ export default class Index extends wepy.page {
       deviceId: devicesId,
       success: res => {
         // 连接蓝牙设备成功
-        console.log('connection')
         console.log('deviceId', devicesId)
         console.log(res)
         wx.hideLoading()
@@ -274,7 +273,6 @@ export default class Index extends wepy.page {
         that.name = that.searchDetail.name
         that.$apply()
         that.removeConnectedDevice()
-//      that.updateBlueToothDevices()
         that.listBlueTooth()
         that.connectDeviceStateChange()
         wx.getBLEDeviceServices({
@@ -376,10 +374,6 @@ export default class Index extends wepy.page {
             if (i.name != ' ' && i.name != '未知设备') {
               name = i.name
             }
-//            else if (i.localName != ' ' && i.localName != '未知设备') {
-//              name = i.localName
-//              console.log('2222', i.localName)
-//            }
             devicesArr.push({
               deviceId: i.deviceId,
               name: name
