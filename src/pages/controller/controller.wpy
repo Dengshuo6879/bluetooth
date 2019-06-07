@@ -25,13 +25,16 @@
   padding:0 15rpx;
 }
 .control-container {
+  margin-top: 60rpx;
+  padding: 20rpx 30rpx;
   text-align: center;
 }
+
 .controll-box {
-  padding: 15rpx 20rpx;
+  padding: 20rpx 30rpx;
   /* border: 1px solid #ddd; */
   border-radius: 20rpx;
-  margin: 20rpx;
+  margin: 40rpx;
   background: #3fcac0;
   color: #fff;
 }
@@ -45,7 +48,8 @@
   height: 140px;
   position: relative;
   text-align: center;
-  display: flex;
+  /* display: flex; */
+  margin:0 auto;
 }
 .bgCanvas {
   /* width: 100%;
@@ -62,6 +66,7 @@
   width: 140px;
   line-height:140px;
   text-align: center;
+  top:10px;
 }
 .battery {
   position: absolute;
@@ -94,14 +99,14 @@
   top: -97rpx;
   left: 105rpx;
 }
-.controlContainer{
+/* .controlContainer{
   display:flex;
   justify-content: space-between;
   padding-top:150rpx;
-}
-.time{
-  flex:0 0 140px;
-}
+} */
+/* .time{ */
+  /* flex:0 0 140px; */
+/* } */
 .moduleLeft{
   display:flex;
   flex-direction:column;
@@ -122,23 +127,23 @@
     <view class='batteryText'>100%</view>
     </view>
     <view class=controlContainer>
-      <view class='control-container moduleLeft'>
-        <text class='controll-box' @tap="writeVal" data-name="模式加" data-character-val="5A44A5">模式加</text>
-        <text data-name="模式加">模式1</text>
-        <!-- <text class='controll-box' @tap="writeVal" data-name="关机" data-character-val="5A11A5">关机</text> -->
-        <text class='controll-box' @tap="writeVal" data-name="模式减" data-character-val="5A55A5">模式减</text>
-      </view>
       <view class='time control-container'>
         <canvas canvas-id='bgCanvas' style="border:1px solid transparent;width:140px;height:140px"></canvas>
         <view class='stepText'>
           <view style="height: 20px;">{{stepText}}min</view>
         </view>
       </view>
-      <!-- <view class='control-container'>
-        <text class='controll-box' @tap="writeVal" data-name="强度加" data-character-val="5A22A5">强度加</text>
-      </view> -->
-      <view class='control-container moduleRight'>
+      <view class='control-container'>
         <text class='controll-box' data-name="开始" data-character-val="5A33A5">开始</text>
+      </view>
+      <view class='control-container'>
+        <text class='controll-box' @tap="writeVal" data-name="模式加" data-character-val="5A44A5">模式加</text>
+        <text data-name="模式加">模式1</text>
+        <text class='controll-box' @tap="writeVal" data-name="模式减" data-character-val="5A55A5">模式减</text>
+      </view>
+      <view class='control-container'>
+        <text class='controll-box' @tap="writeVal" data-name="关机" data-character-val="5A11A5">关机</text>
+        <!-- <text class='controll-box' @tap="writeVal" data-name="强度加" data-character-val="5A22A5">强度加</text> -->
       </view>
     </view>
     
