@@ -201,9 +201,9 @@ export default class Controller extends wepy.page {
             showCancel: false,
             confirmText: '我知道了',
             complete(res) {
-              wx.navigateBack({
-                delta: 1
-              });
+              // wx.navigateBack({
+              //   delta: 1
+              // });
             }
           });
           //      wx.redirectTo({
@@ -256,43 +256,14 @@ export default class Controller extends wepy.page {
           res.deviceId
         } state has changed, connected: ${res.connected}`
       );
-      wx.showLoading({
-        title: '重连蓝牙中...'
-      });
-      if (!res.connected && that.deviceId) {
-        console.log('begin connecnt');
-        wx.createBLEConnection({
-          deviceId: that.deviceId,
-          success(res) {
-            wx.showToast({
-              title: '重连成功',
-              icon: 'none',
-              duration: 2000
-            });
-          },
-          fail() {
-            console.log('reconnect failed');
-            wx.showModal({
-              content: '连接的蓝牙已中断，返回首页重新连接',
-              showCancel: false,
-              confirmText: '我知道了',
-              complete(res) {
-                wx.setStorageSync('noreload', 1);
-                //                wx.redirectTo({
-                //                  url: '/pages/index/index?noSearch=1'
-                //                })
-                that.$parent.globalData.initData = 1;
-                that.$apply();
-                wx.navigateBack({
-                  delta: 1
-                });
-              }
-            });
-          },
-          complete() {
-            wx.hideLoading();
-          }
-        });
+      // wx.showLoading({
+      //   title: '重连蓝牙中...'
+      // });
+      if (!res.connected) {
+        // console.log('begin connecnt');
+        wx.navigateTo({
+          url:'/pages/index/index'
+        })
       }
     });
   }
@@ -414,8 +385,8 @@ export default class Controller extends wepy.page {
     this.$apply();
     console.log('this.characteristicId',this.characteristicId);
     console.log('this.data',this.data);
-    // this.connectDeviceStateChange();
-    // this.subscribeNotifyChange();
+    this.connectDeviceStateChange();
+    this.subscribeNotifyChange();
     this.drawTime(0);
     wx.setStorageSync('noreload', 1);
   }
