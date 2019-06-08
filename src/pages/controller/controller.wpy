@@ -161,6 +161,9 @@ import wepy from 'wepy';
 const ctx = wx.createCanvasContext('bgCanvas');
 var valHandle; //定时器
 export default class Controller extends wepy.page {
+  config = {
+    "navigationBarTitleText": "控制台"
+  }
   data = {
     sendCharacterVal: '',
     deviceId: '',
@@ -220,9 +223,9 @@ export default class Controller extends wepy.page {
     },
     hasDown:function (newVal,oldVal) {
       console.log('enter has down newVal',newVal);
-      if (!newVal) {
+      if (newVal == 0) {
         wx.showModal({
-              content: '仪器已脱落',
+              content: '贴片脱落，请检查',
               showCancel: false,
               confirmText: '我知道了',
             });
@@ -306,7 +309,7 @@ export default class Controller extends wepy.page {
       })
       function ab2hex(buffer) {
           console.log('buffer',buffer);
-          console.log('new Uint8Array(buffer):'+new Uint8Array(buffer));
+          console.log('new Uint16Array(buffer):'+new Uint16Array(buffer));
           const hexArr = Array.prototype.map.call(
               new Uint8Array(buffer),
               function (bit) {
@@ -316,11 +319,11 @@ export default class Controller extends wepy.page {
           return hexArr.join('')
       }
       wx.onBLECharacteristicValueChange(function (res) {
-        //  console.log(`characteristic ${res.characteristicId} has changed, now is ${res.value}`)
+         console.log(`characteristic ${res.characteristicId} has changed, now is ${res.value}`)
           var changeData = new Uint8Array(res.value);
-          // console.log('changeData',changeData);
+          console.log('changeData',changeData);
           if(changeData.length>0){
-            that.formateNeedData(changeData);  
+            that.formateNeedData(changeData);
           }
           // console.log(ab2hex(res.value))
       })

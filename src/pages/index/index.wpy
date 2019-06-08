@@ -354,7 +354,7 @@ export default class Index extends wepy.page {
           console.log('name',name);
 
           // if(name.indexOf('Test')>=0){
-          if(name.indexOf('SMKJ')>=0){
+          if(name.indexOf('SMKJ')>=0 || name.indexOf('Test')>=0){
             that.autoConnectDevice({
               deviceId: devices[i].deviceId,
               name: name
