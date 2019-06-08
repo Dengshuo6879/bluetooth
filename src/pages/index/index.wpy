@@ -352,7 +352,7 @@ export default class Index extends wepy.page {
             name = devices[i].localName
           }
           console.log('name',name);
-          // name.indexOf('BLE')>=0 || 
+          // name.indexOf('Test')>=0 || 
           if(name.indexOf('SMKJ')>=0){
             that.autoConnectDevice({
               deviceId: devices[i].deviceId,

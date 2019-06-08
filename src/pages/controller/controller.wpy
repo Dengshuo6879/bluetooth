@@ -417,6 +417,7 @@ export default class Controller extends wepy.page {
     // this.connectDeviceStateChange();
     // this.subscribeNotifyChange();
     this.drawTime(0);
+    wx.setStorageSync('noreload', 1);
   }
 
   drawTime(val) {
