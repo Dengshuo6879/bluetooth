@@ -61,11 +61,6 @@
 }
 </style>
 <template>
-  <!-- <view class="container"> -->
-    <!-- <view wx:if="{{!showBlueToothDetail}}">{{showTips}}</view> -->
-    <!-- <view wx:else @tap="toController">连接的蓝牙：{{name}} {{deviceId}}</view> -->
-    <!--{{name!=''?name:deviceId}}-->
-  <!-- </view> -->
   <view class='listContainer'>
     <block wx:if="{{!showBlueToothDetail}}">
       <view class='listText'>
@@ -86,7 +81,7 @@
     </view> -->
   </view>
 
-  <view class='listContainer'>
+  <!-- <view class='listContainer'>
     <view class='listText'>
       <span class='divider'></span>搜索到的蓝牙设备
     </view>
@@ -94,16 +89,12 @@
       <view class='listItem' data-device-id="{{item.deviceId}}" data-item-detail="{{item}}" @tap="connectDevice" wx:for="{{devicesList}}">
         <text wx:if="{{item.name !=''}}">{{item.name}}</text>
         <text wx:else>{{item.deviceId}}</text>
-        <!--{{item.deviceId}}-->
       </view>
     </block>
     <view class='listItem' wx:else>
       暂无搜索到的蓝牙设备
     </view>
-    <!-- <view data-device-id="{{item.deviceId}}" data-item-detail="{{item}}" @tap="connectDevice" wx:for="{{devicesList}}">
-      {{item.name}}  {{item.deviceId}}
-    </view> -->
-  </view>
+  </view> -->
 </template>
 
 <script>
@@ -154,6 +145,26 @@ export default class Index extends wepy.page {
           JSON.stringify(this.characteristicId)
       })
     }
+  };
+  toToController(){
+    console.log('todata2', this.data)
+      wx.navigateTo({
+        url:
+          '/pages/controller/controller?deviceId=' +
+          this.deviceId +
+          '&serviceId=' +
+          this.serviceId +
+          '&characteristicId=' +
+          JSON.stringify(this.characteristicId)
+      })
+  };
+  autoConnectDevice(data){
+      console.log('data',data);
+      this.searchDeviceId =data.deviceId;
+      this.searchDetail = data;
+      this.hideLoading = true
+      this.$apply()
+      this.search(true)
   };
   updateBlueToothDevices() {
     console.log('enter updateBlueToothDevices....')
@@ -267,13 +278,14 @@ export default class Index extends wepy.page {
           duration: 2000,
           icon: 'none'
         })
-        console.log(that.devicesList)
+        // console.log(that.devicesList)
         that.showBlueToothDetail = true
+        console.log('that.searchDetail',that.searchDetail);
         that.deviceId = that.searchDetail.deviceId
         that.name = that.searchDetail.name
         that.$apply()
         that.removeConnectedDevice()
-        that.listBlueTooth()
+        // that.listBlueTooth()
         that.connectDeviceStateChange()
         wx.getBLEDeviceServices({
           deviceId: devicesId,
@@ -298,6 +310,7 @@ export default class Index extends wepy.page {
                       i++;
                   }
                   console.log('that.characteristicId',that.characteristicId);
+                  that.toToController();
               }
             })
           }
@@ -323,20 +336,6 @@ export default class Index extends wepy.page {
     for (let i = 0; i < devices.length; i++) {
       //        let advertisData = devices[i].advertisData
       if (that.data.searchDeviceId != '') {
-        //          console.log('searchDeviceId', this.data.searchDeviceId)
-        //          console.log('conn11111222')
-        //          console.log('devices[i].deviceId', devices[i].deviceId)
-        //          if (devices[i].deviceId == this.data.searchDeviceId) {
-        //            console.log('entererere')
-        //            wx.stopBluetoothDevicesDiscovery({})
-        //            that.data.deviceId = this.data.searchDeviceId
-        //            that.data.name = devices[i].name
-        //            that.$apply()
-        //            wx.hideLoading()
-        //            console.log('data,', that.data)
-        //            that.connectBLEZDevice()
-        //            break
-        //          }
       } else {
         let devicesList = that.devicesList
         let t = devicesList.findIndex(function(item, index, arr) {
@@ -352,11 +351,19 @@ export default class Index extends wepy.page {
           } else if (devices[i].localName != ' ' && devices[i].localName != '未知设备') {
             name = devices[i].localName
           }
-          that.devicesList.push({
-            deviceId: devices[i].deviceId,
-            name: name
-          })
-          that.$apply()
+          console.log('name',name);
+          // name.indexOf('BLE')>=0 || 
+          if(name.indexOf('SMKJ')>=0){
+            that.autoConnectDevice({
+              deviceId: devices[i].deviceId,
+              name: name
+            });
+          }
+          // that.devicesList.push({
+          //   deviceId: devices[i].deviceId,
+          //   name: name
+          // })
+          // that.$apply()
         }
       }
     }
@@ -413,6 +420,10 @@ export default class Index extends wepy.page {
           wx.stopBluetoothDevicesDiscovery({})
           wx.stopPullDownRefresh()
         }, 10000)
+      },
+      fail(res){
+        console.log('enter failed...');
+        console.log(res);
       }
     })
   }
@@ -439,8 +450,7 @@ export default class Index extends wepy.page {
           }
         })
       },
-      fail() {
-        console.log('failed')
+      fail(res) {
         wx.showModal({
           content: '请开启手机蓝牙后再试!',
           showCancel: false,
@@ -464,7 +474,7 @@ export default class Index extends wepy.page {
     var initdata = this.$parent.globalData.initData
     if (initdata) {
       this.initData()
-      this.listBlueTooth()
+      // this.listBlueTooth()
       this.$parent.globalData.initData = 0
       this.$apply()
     }

@@ -193,6 +193,9 @@ export default class Controller extends wepy.page {
         deviceId: that.deviceId,
         success(res) {
           console.log(res);
+          wx.setStorageSync('noreload', 1);
+          that.$parent.globalData.initData = 1;
+          that.$apply();
           wx.showModal({
             content: '蓝牙已成功断开',
             showCancel: false,
@@ -203,9 +206,6 @@ export default class Controller extends wepy.page {
               });
             }
           });
-          that.$parent.globalData.initData = 1;
-          that.$apply();
-          wx.setStorageSync('noreload', 1);
           //      wx.redirectTo({
           //        url: '/pages/index/index'
           //      })
@@ -219,7 +219,8 @@ export default class Controller extends wepy.page {
       this.drawTime(newVal);
     },
     hasDown:function (newVal,oldVal) {
-      if (newVal == 0) {
+      console.log('enter has down newVal',newVal);
+      if (!newVal) {
         wx.showModal({
               content: '仪器已脱落',
               showCancel: false,
@@ -308,7 +309,7 @@ export default class Controller extends wepy.page {
       this.stepText = formatData[3];//使用时间
       this.hasDown = formatData[4];//是否脱落
       this.$apply();
-      console.log(this.data);
+      console.log('formatData:',formatData[4]);
     }
   subscribeNotifyChange() {
       var that = this;
@@ -413,8 +414,8 @@ export default class Controller extends wepy.page {
     this.$apply();
     console.log('this.characteristicId',this.characteristicId);
     console.log('this.data',this.data);
-    this.connectDeviceStateChange();
-    this.subscribeNotifyChange();
+    // this.connectDeviceStateChange();
+    // this.subscribeNotifyChange();
     this.drawTime(0);
   }
 
